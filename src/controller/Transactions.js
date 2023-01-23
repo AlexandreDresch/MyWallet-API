@@ -2,8 +2,6 @@ import dayjs from "dayjs";
 
 import db from "../config/database.js";
 
-import { transactionsSchema } from "../schemas/TransactionSchema.js";
-
 export async function Wallet(req, res) {
   const { authorization } = req.headers;
   const token = authorization?.replace("Bearer ", "");
@@ -29,17 +27,12 @@ export async function Wallet(req, res) {
     console.error(error);
     return res.sendStatus(500);
   }
-}
+};
 
-export async function NewEntry(req, res) {
-  const { error, value } = transactionsSchema.validate(req.body);
+export async function NewTransaction(req, res) {
+  const { value, description, type } = req.body;
   const { authorization } = req.headers;
   const token = authorization?.replace("Bearer ", "");
-
-  if (error) {
-    console.error(error);
-    return res.sendStatus(422);
-  }
 
   try {
     const session = await db.collection("sessions").findOne({ token });
@@ -50,9 +43,9 @@ export async function NewEntry(req, res) {
 
     await db.collection("wallet").insertOne({
       userId: session.userId,
-      value: value.value,
-      description: value.description,
-      type: "entry",
+      value: value,
+      description: description,
+      type: type,
       date: dayjs().format("DD/MM"),
     });
 
@@ -61,36 +54,4 @@ export async function NewEntry(req, res) {
     console.error(error);
     res.sendStatus(500);
   }
-}
-
-export async function NewWithdraw(req, res) {
-  const { error, value } = transactionsSchema.validate(req.body);
-  const { authorization } = req.headers;
-  const token = authorization?.replace("Bearer ", "");
-
-  if (error) {
-    console.error(error);
-    return res.sendStatus(422);
-  }
-
-  try {
-    const session = await db.collection("sessions").findOne({ token });
-
-    if (!token || !session) {
-      return res.sendStatus(401);
-    }
-
-    await db.collection("wallet").insertOne({
-      userId: session.userId,
-      value: value.value,
-      description: value.description,
-      type: "withdraw",
-      date: dayjs().format("DD/MM"),
-    });
-
-    res.sendStatus(201);
-  } catch (error) {
-    console.error(error);
-    res.sendStatus(500);
-  }
-}
+};
